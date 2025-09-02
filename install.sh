@@ -72,7 +72,7 @@ get_latest_version() {
         print_warning "Nenhum release encontrado, usando último commit..."
         local commit_sha
         commit_sha=$(curl -s "https://api.github.com/repos/${REPO}/commits" | grep '"sha":' | head -1 | sed -E 's/.*"([^"]{7}).*/\1/')
-        version="commit-${commit_sha}"
+        version="v1.0.0"
     fi
 
     echo "$version"
@@ -81,7 +81,7 @@ get_latest_version() {
 # Baixar e instalar o binário
 install_prismium() {
     local platform="$1"
-    local version="commit-1019921"
+    local version="v1.0.0"
     
     print_status "Detectado: $platform"
     print_status "Baixando Prismium $version..."
