@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 🚀 Instalador Universal do Prismium
-# Este script baixa e instala o Prismium em qualquer sistema operacional
+# 🚀 Instalador do Prismium via Releases Públicos
+# Este script baixa e instala o Prismium dos releases públicos
 
 set -e
 
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configurações
-REPO="luizguil99/terminal-cli"  # Repositório oficial do Prismium
+REPO="luizguil99/terminal-cli"
 BINARY_NAME="prismium"
 INSTALL_DIR="$HOME/.local/bin"
 
@@ -39,18 +39,18 @@ detect_os() {
     local arch=""
     
     case "$(uname -s)" in
-        Linux*)     os="Linux" ;;
-        Darwin*)    os="Darwin" ;;
-        CYGWIN*)    os="Windows" ;;
-        MINGW*)     os="Windows" ;;
-        MSYS*)      os="Windows" ;;
-        *)          os="Unknown" ;;
+        Linux*)     os="linux" ;;
+        Darwin*)    os="darwin" ;;
+        CYGWIN*)    os="windows" ;;
+        MINGW*)     os="windows" ;;
+        MSYS*)      os="windows" ;;
+        *)          os="unknown" ;;
     esac
     
     case "$(uname -m)" in
-        x86_64)     arch="x86_64" ;;
-        i386)       arch="i386" ;;
-        i686)       arch="i386" ;;
+        x86_64)     arch="amd64" ;;
+        i386)       arch="386" ;;
+        i686)       arch="386" ;;
         arm64)      arch="arm64" ;;
         aarch64)    arch="arm64" ;;
         armv7l)     arch="armv7" ;;
@@ -60,19 +60,37 @@ detect_os() {
     echo "${os}_${arch}"
 }
 
+# Verificar dependências
+check_dependencies() {
+    local missing_deps=()
+    
+    if ! command -v curl &> /dev/null; then
+        missing_deps+=("curl")
+    fi
+    
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        print_error "Dependências faltando: ${missing_deps[*]}"
+        print_status "Por favor, instale as dependências:"
+        echo "  - curl: https://curl.se/"
+        return 1
+    fi
+    
+    return 0
+}
+
 # Baixar a versão mais recente
 get_latest_version() {
     local version
     
-    # Tentar obter releases primeiro
+    # Tentar obter releases públicos
     version=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     
-    # Se não houver releases, usar o último commit
     if [ -z "$version" ] || [ "$version" = "null" ]; then
-        print_warning "Nenhum release encontrado, usando último commit..."
-        local commit_sha
-        commit_sha=$(curl -s "https://api.github.com/repos/${REPO}/commits" | grep '"sha":' | head -1 | sed -E 's/.*"([^"]{7}).*/\1/')
-        version="commit-${commit_sha}"
+        print_error "Nenhum release público encontrado"
+        print_status "Para usar este instalador, você precisa:"
+        echo "  1. Criar releases públicos no repositório $REPO"
+        echo "  2. Ou usar o instalador alternativo que compila do código fonte"
+        return 1
     fi
 
     echo "$version"
@@ -81,48 +99,85 @@ get_latest_version() {
 # Baixar e instalar o binário
 install_prismium() {
     local platform="$1"
-    local version="commit-1019921"
+    local version="$2"
     
     print_status "Detectado: $platform"
     print_status "Baixando Prismium $version..."
     
-    # URL do release
-    local url="https://github.com/${REPO}/releases/download/${version}/prismium_${version}_${platform}.tar.gz"
+    # Tentar diferentes formatos de nome de arquivo
+    local possible_names=(
+        "prismium_${version}_${platform}.tar.gz"
+        "prismium_${version}_${platform}.zip"
+        "prismium_${platform}.tar.gz"
+        "prismium_${platform}.zip"
+        "prismium-${version}-${platform}.tar.gz"
+        "prismium-${version}-${platform}.zip"
+    )
     
-    # Tentar baixar
-    if ! curl -L -o "/tmp/prismium.tar.gz" "$url"; then
-        print_error "Falha ao baixar o binário para $platform"
-        print_status "Tentando com nome alternativo..."
-        
-        # Tentar com nome alternativo (sem versão)
-        url="https://github.com/${REPO}/releases/download/${version}/prismium_${platform}.tar.gz"
-        if ! curl -L -o "/tmp/prismium.tar.gz" "$url"; then
-            print_error "Não foi possível baixar o binário"
-            return 1
+    local download_url=""
+    local filename=""
+    
+    # Tentar cada formato
+    for name in "${possible_names[@]}"; do
+        local url="https://github.com/${REPO}/releases/download/${version}/${name}"
+        if curl -s --head "$url" | head -n 1 | grep -q "200 OK"; then
+            download_url="$url"
+            filename="$name"
+            break
         fi
+    done
+    
+    if [ -z "$download_url" ]; then
+        print_error "Não foi possível encontrar um binário compatível para $platform"
+        print_status "Formatos tentados:"
+        for name in "${possible_names[@]}"; do
+            echo "  - $name"
+        done
+        return 1
+    fi
+    
+    print_success "Encontrado: $filename"
+    
+    # Baixar
+    if ! curl -L -o "/tmp/$filename" "$download_url"; then
+        print_error "Falha ao baixar o binário"
+        return 1
     fi
     
     print_success "Binário baixado com sucesso!"
     
     # Extrair
     print_status "Extraindo binário..."
-    tar -xzf "/tmp/prismium.tar.gz" -C "/tmp/"
+    cd "/tmp"
+    
+    if [[ "$filename" == *.tar.gz ]]; then
+        tar -xzf "$filename"
+    elif [[ "$filename" == *.zip ]]; then
+        unzip -q "$filename"
+    fi
     
     # Criar diretório de instalação
     mkdir -p "$INSTALL_DIR"
     
-    # Instalar binário
-    if [ -f "/tmp/prismium" ]; then
-        cp "/tmp/prismium" "$INSTALL_DIR/$BINARY_NAME"
-        chmod +x "$INSTALL_DIR/$BINARY_NAME"
-        print_success "Prismium instalado em $INSTALL_DIR/$BINARY_NAME"
-    else
+    # Encontrar e instalar binário
+    local binary_found=false
+    for binary in prismium prismium.exe; do
+        if [ -f "$binary" ]; then
+            cp "$binary" "$INSTALL_DIR/$BINARY_NAME"
+            chmod +x "$INSTALL_DIR/$BINARY_NAME"
+            print_success "Prismium instalado em $INSTALL_DIR/$BINARY_NAME"
+            binary_found=true
+            break
+        fi
+    done
+    
+    if [ "$binary_found" = false ]; then
         print_error "Binário não encontrado após extração"
         return 1
     fi
     
     # Limpar arquivos temporários
-    rm -f "/tmp/prismium.tar.gz" "/tmp/prismium"
+    rm -f "/tmp/$filename" "/tmp/prismium" "/tmp/prismium.exe"
 }
 
 # Configurar PATH
@@ -153,31 +208,10 @@ setup_path() {
     fi
 }
 
-# Verificar dependências
-check_dependencies() {
-    local missing_deps=()
-    
-    if ! command -v curl &> /dev/null; then
-        missing_deps+=("curl")
-    fi
-    
-    if ! command -v tar &> /dev/null; then
-        missing_deps+=("tar")
-    fi
-    
-    if [ ${#missing_deps[@]} -ne 0 ]; then
-        print_error "Dependências faltando: ${missing_deps[*]}"
-        print_status "Por favor, instale as dependências e tente novamente"
-        return 1
-    fi
-    
-    return 0
-}
-
 # Função principal
 main() {
-    echo "🚀 Instalador Universal do Prismium"
-    echo "===================================="
+    echo "🚀 Instalador do Prismium via Releases Públicos"
+    echo "================================================"
     echo ""
     
     # Verificar dependências
@@ -189,7 +223,7 @@ main() {
     local platform
     platform=$(detect_os)
     
-    if [ "$platform" = "Unknown_unknown" ]; then
+    if [ "$platform" = "unknown_unknown" ]; then
         print_error "Sistema operacional não suportado"
         exit 1
     fi
@@ -200,7 +234,6 @@ main() {
     version=$(get_latest_version)
     
     if [ -z "$version" ]; then
-        print_error "Não foi possível obter a versão mais recente"
         exit 1
     fi
     
@@ -214,7 +247,7 @@ main() {
         print_success "🎉 Prismium instalado com sucesso!"
         echo ""
         print_status "Para usar o Prismium:"
-        echo "  1. Execute: source $shell_config"
+        echo "  1. Execute: source ~/.zshrc (ou ~/.bashrc)"
         echo "  2. Ou abra um novo terminal"
         echo "  3. Execute: prismium"
         echo ""

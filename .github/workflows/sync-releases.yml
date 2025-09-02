@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          repository: ${{ github.repository }}
 
       - name: Check for new releases
         id: check_releases
@@ -39,6 +40,15 @@ jobs:
           # Usar token personalizado para acessar repositório privado
           LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.PRIVATE_REPO_TOKEN }}" \
             "https://api.github.com/repos/$SOURCE_REPO/releases/latest" | jq -r '.tag_name')
+          
+          # Se não houver releases, usar o último commit
+          if [ "$LATEST_RELEASE" = "null" ] || [ -z "$LATEST_RELEASE" ]; then
+            echo "⚠️  Nenhum release encontrado, usando último commit..."
+            LATEST_COMMIT=$(curl -s -H "Authorization: token ${{ secrets.PRIVATE_REPO_TOKEN }}" \
+              "https://api.github.com/repos/$SOURCE_REPO/commits" | jq -r '.[0].sha[0:7]')
+            LATEST_RELEASE="commit-$LATEST_COMMIT"
+            echo "📝 Usando commit como versão: $LATEST_RELEASE"
+          fi
           
           # Verificar releases do repositório público atual
           CURRENT_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name // "v0.0.0"')

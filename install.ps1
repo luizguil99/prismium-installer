@@ -2,7 +2,7 @@
 # Este script baixa e instala o Prismium no Windows
 
 param(
-    [string]$Version = "latest"
+    [string]$Version = "commit-1019921"
 )
 
 # Configurações
