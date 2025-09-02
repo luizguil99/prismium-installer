@@ -7,19 +7,19 @@ Instalador universal para o Prismium - um assistente de IA baseado em terminal p
 ### Linux/macOS
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/seu-usuario/prismium-installer/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/luizguil99/prismium-installer/main/install.sh | bash
 ```
 
 ### Windows
 
 ```powershell
-irm https://raw.githubusercontent.com/seu-usuario/prismium-installer/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/luizguil99/prismium-installer/main/install.ps1 | iex
 ```
 
 ### Go Install (Qualquer plataforma)
 
 ```bash
-go install github.com/seu-usuario/crush@latest
+go install github.com/luizguil99/prismium@latest
 ```
 
 ## 📋 Pré-requisitos
@@ -95,19 +95,19 @@ Para atualizar para a versão mais recente:
 
 ```bash
 # Reinstalar
-curl -sSL https://raw.githubusercontent.com/seu-usuario/prismium-installer/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/luizguil99/prismium-installer/main/install.sh | bash
 ```
 
 ## 📚 Documentação
 
-- [Guia Completo de Instalação](https://github.com/seu-usuario/crush/blob/main/INSTALACAO.md)
-- [Documentação do Prismium](https://github.com/seu-usuario/crush/blob/main/README-PRISMIUM.md)
-- [Guia de Distribuição](https://github.com/seu-usuario/crush/blob/main/DISTRIBUICAO.md)
+- [Guia Completo de Instalação](https://github.com/luizguil99/prismium/blob/main/INSTALACAO.md)
+- [Documentação do Prismium](https://github.com/luizguil99/prismium/blob/main/README-PRISMIUM.md)
+- [Guia de Distribuição](https://github.com/luizguil99/prismium/blob/main/DISTRIBUICAO.md)
 
 ## 🆘 Suporte
 
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/crush/issues)
-- **Documentação**: [Wiki](https://github.com/seu-usuario/crush/wiki)
+- **Issues**: [GitHub Issues](https://github.com/luizguil99/prismium/issues)
+- **Documentação**: [Wiki](https://github.com/luizguil99/prismium/wiki)
 - **Discord**: [Servidor do Charm](https://charm.land/discord)
 
 ## 📄 Licença

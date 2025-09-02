@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configurações
-REPO="seu-usuario/crush"  # Altere para seu repositório
+REPO="luizguil99/prismium"  # Repositório oficial do Prismium
 BINARY_NAME="prismium"
 INSTALL_DIR="$HOME/.local/bin"
 
