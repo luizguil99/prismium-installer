@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
+# vim: set ts=2 sw=2 tw=0 fo=jcroql
+version: 2
+
+project_name: prismium
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+  license: "FSL-1.1-MIT"
+  homepage: "https://github.com/seu-usuario/crush"
+  description: "Prismium - A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
+  full_description: "Prismium is a fork of Crush, a powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
+  maintainers:
+    - "seu-usuario <seu-email@exemplo.com>"
+
+nightly:
+  publish_release: true
+  keep_single_release: true
+  version_template: "{{ incminor .Version }}-nightly"
+
+snapshot:
+  version_template: "0.0.0-{{ .Timestamp }}"
+
+before:
+  hooks:
+    - go mod tidy
+    - rm -rf completions
+    - mkdir completions
+    - rm -rf manpages
+    - mkdir manpages
+    - sh -c 'go run . completion bash >./completions/prismium.bash'
+    - sh -c 'go run . completion zsh >./completions/prismium.zsh'
+    - sh -c 'go run . completion fish >./completions/prismium.fish'
+    - sh -c 'go run . man | gzip -c >./manpages/prismium.1.gz'
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+      - GOEXPERIMENT=greenteagc
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+      - openbsd
+      - netbsd
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+      - arm
+    goarm:
+      - "7"
+    ldflags:
+      - -s -w -X github.com/charmbracelet/crush/internal/version.Version={{.Version}}
+
+archives:
+  - name_template: >-
+      prismium_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- with .Arm}}v{{ . }}{{ end }}
+    wrap_in_directory: true
+    files:
+      - README*
+      - LICENSE*
+      - manpages/*
+      - completions/*
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  prerelease: auto
+  footer: |
+    ## 🚀 Prismium - Seu assistente de código favorito!
+    
+    ### Instalação Rápida
+    
+    **Linux/macOS:**
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/seu-usuario/crush/main/install.sh | bash
+    ```
+    
+    **Windows (PowerShell):**
+    ```powershell
+    irm https://raw.githubusercontent.com/seu-usuario/crush/main/install.ps1 | iex
+    ```
+    
+    **Go Install:**
+    ```bash
+    go install github.com/seu-usuario/crush@latest
+    ```
+    
+    ### Documentação
+    - [Guia de Instalação](https://github.com/seu-usuario/crush/blob/main/INSTALACAO.md)
+    - [README](https://github.com/seu-usuario/crush/blob/main/README-PRISMIUM.md)

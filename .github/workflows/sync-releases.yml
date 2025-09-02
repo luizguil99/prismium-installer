@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Sync Releases
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # A cada 6 horas
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update even if no new releases'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-releases
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for new releases
+        id: check_releases
+        run: |
+          # Verificar se há novos releases no repositório principal
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/${{ secrets.SOURCE_REPO }}/releases/latest" | jq -r '.tag_name')
+          CURRENT_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name // "v0.0.0"')
+          
+          echo "Latest release in source: $LATEST_RELEASE"
+          echo "Current release here: $CURRENT_RELEASE"
+          
+          if [ "$LATEST_RELEASE" != "$CURRENT_RELEASE" ] || [ "${{ github.event.inputs.force_update }}" = "true" ]; then
+            echo "new_release=true" >> $GITHUB_OUTPUT
+            echo "latest_version=$LATEST_RELEASE" >> $GITHUB_OUTPUT
+          else
+            echo "new_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update installation scripts
+        if: steps.check_releases.outputs.new_release == 'true'
+        run: |
+          VERSION="${{ steps.check_releases.outputs.latest_version }}"
+          
+          # Atualizar scripts com nova versão
+          sed -i "s/version=\".*\"/version=\"$VERSION\"/g" install.sh
+          sed -i "s/Version = \".*\"/Version = \"$VERSION\"/g" install.ps1
+          
+          # Atualizar README com nova versão
+          sed -i "s/Prismium v[0-9.]*/Prismium $VERSION/g" README.md
+
+      - name: Commit and push changes
+        if: steps.check_releases.outputs.new_release == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "chore: update to ${{ steps.check_releases.outputs.latest_version }}" || exit 0
+          git push
+
+      - name: Create release
+        if: steps.check_releases.outputs.new_release == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.check_releases.outputs.latest_version }}
+          release_name: Prismium Installer ${{ steps.check_releases.outputs.latest_version }}
+          body: |
+            ## 🚀 Prismium Installer ${{ steps.check_releases.outputs.latest_version }}
+            
+            ### Instalação Rápida
+            
+            **Linux/macOS:**
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+            ```
+            
+            **Windows:**
+            ```powershell
+            irm https://raw.githubusercontent.com/${{ github.repository }}/main/install.ps1 | iex
+            ```
+            
+            ### Mudanças
+            - Atualizado para Prismium ${{ steps.check_releases.outputs.latest_version }}
+            - Scripts de instalação otimizados
+            - Melhor detecção de plataforma
+            
+            ### Documentação
+            - [Guia de Instalação](https://github.com/${{ github.repository }}/blob/main/README.md)
+            - [Prismium](https://github.com/${{ secrets.SOURCE_REPO }})
+          draft: false
+          prerelease: false
