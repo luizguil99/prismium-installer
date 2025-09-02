@@ -24,16 +24,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
 
       - name: Check for new releases
         id: check_releases
         run: |
-          # Verificar se há novos releases no repositório principal
-          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/${{ secrets.SOURCE_REPO }}/releases/latest" | jq -r '.tag_name')
+          # Verificar se há novos releases no repositório principal (privado)
+          SOURCE_REPO="${{ secrets.SOURCE_REPO }}"
+          if [ -z "$SOURCE_REPO" ]; then
+            echo "SOURCE_REPO not set, using default: luizguil99/terminal-cli"
+            SOURCE_REPO="luizguil99/terminal-cli"
+          fi
+          
+          # Usar token personalizado para acessar repositório privado
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.PRIVATE_REPO_TOKEN }}" \
+            "https://api.github.com/repos/$SOURCE_REPO/releases/latest" | jq -r '.tag_name')
+          
+          # Verificar releases do repositório público atual
           CURRENT_RELEASE=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name // "v0.0.0"')
           
-          echo "Latest release in source: $LATEST_RELEASE"
+          echo "Latest release in source ($SOURCE_REPO): $LATEST_RELEASE"
           echo "Current release here: $CURRENT_RELEASE"
           
           if [ "$LATEST_RELEASE" != "$CURRENT_RELEASE" ] || [ "${{ github.event.inputs.force_update }}" = "true" ]; then
@@ -62,13 +72,13 @@ jobs:
           git config --local user.name "GitHub Action"
           git add .
           git commit -m "chore: update to ${{ steps.check_releases.outputs.latest_version }}" || exit 0
-          git push
+          git push origin main
 
       - name: Create release
         if: steps.check_releases.outputs.new_release == 'true'
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
         with:
           tag_name: ${{ steps.check_releases.outputs.latest_version }}
           release_name: Prismium Installer ${{ steps.check_releases.outputs.latest_version }}
@@ -94,6 +104,6 @@ jobs:
             
             ### Documentação
             - [Guia de Instalação](https://github.com/${{ github.repository }}/blob/main/README.md)
-            - [Prismium](https://github.com/${{ secrets.SOURCE_REPO }})
+            - [Prismium](https://github.com/luizguil99/terminal-cli)
           draft: false
           prerelease: false

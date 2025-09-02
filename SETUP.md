@@ -1,172 +1,64 @@
-# 🔧 Configuração do Repositório Prismium Installer
+# Configuração do Workflow de Sincronização
 
-## 📋 Pré-requisitos
+Este repositório contém um workflow do GitHub Actions que sincroniza automaticamente os releases do repositório privado `luizguil99/terminal-cli` para este repositório público `luizguil99/prismium-installer`.
 
-1. **Repositório principal** (privado): `seu-usuario/crush`
-2. **Repositório de instalação** (público): `seu-usuario/prismium-installer`
-3. **GitHub Personal Access Token** com permissões adequadas
+## Configuração Necessária
 
-## 🚀 Passos para Configurar
+Para que o workflow funcione corretamente, você precisa configurar os seguintes secrets no repositório público:
 
-### 1. Criar Repositório Público
+### 1. SOURCE_REPO (Opcional)
+- **Nome**: `SOURCE_REPO`
+- **Valor**: `luizguil99/terminal-cli`
+- **Descrição**: Nome do repositório privado que contém o código principal
 
-```bash
-# No GitHub, criar novo repositório público
-# Nome: prismium-installer
-# Descrição: Universal installer for Prismium
-# Público: ✅
-# README: ❌ (já temos)
-# .gitignore: ❌ (já temos)
-# License: ❌ (já temos)
-```
+### 2. PRIVATE_REPO_TOKEN (Obrigatório)
+- **Nome**: `PRIVATE_REPO_TOKEN`
+- **Valor**: Token de acesso pessoal do GitHub
+- **Descrição**: Token com acesso ao repositório privado `luizguil99/terminal-cli`
 
-### 2. Configurar Secrets
+## Como Criar o Token
 
-No repositório `prismium-installer`, adicionar secrets:
+1. Acesse [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
+2. Clique em "Generate new token (classic)"
+3. Configure as seguintes permissões:
+   - `repo` (acesso completo aos repositórios)
+   - `read:org` (se o repositório estiver em uma organização)
+4. Copie o token gerado
+5. No repositório público, vá em Settings > Secrets and variables > Actions
+6. Clique em "New repository secret"
+7. Adicione o secret `PRIVATE_REPO_TOKEN` com o valor do token
 
-```bash
-# GitHub Settings > Secrets and variables > Actions
-SOURCE_REPO=seu-usuario/crush  # Repositório principal (privado)
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx  # Token com acesso ao repo principal
-```
+## Como Configurar os Secrets
 
-### 3. Fazer Upload dos Arquivos
+1. Acesse o repositório público: https://github.com/luizguil99/prismium-installer
+2. Vá em **Settings** > **Secrets and variables** > **Actions**
+3. Clique em **New repository secret**
+4. Adicione os secrets conforme descrito acima
 
-```bash
-# Na pasta prismium-installer
-cd prismium-installer
-git init
-git add .
-git commit -m "feat: initial prismium installer setup"
-git branch -M main
-git remote add origin https://github.com/seu-usuario/prismium-installer.git
-git push -u origin main
-```
+## Como o Workflow Funciona
 
-### 4. Configurar Workflow
+1. **Execução Automática**: O workflow roda a cada 6 horas
+2. **Execução Manual**: Você pode executar manualmente em Actions > Sync Releases
+3. **Verificação**: Compara o último release do repositório privado com o público
+4. **Atualização**: Se houver diferença, atualiza os scripts e cria um novo release
+5. **Sincronização**: Mantém ambos os repositórios com a mesma versão
 
-O workflow `sync-releases.yml` vai:
-- Verificar novos releases no repo principal a cada 6 horas
-- Atualizar scripts automaticamente
-- Criar releases do instalador
+## Arquivos Atualizados Automaticamente
 
-## 🔄 Como Funciona
+- `install.sh` - Script de instalação para Linux/macOS
+- `install.ps1` - Script de instalação para Windows
+- `README.md` - Documentação com a versão atual
 
-### Fluxo de Trabalho:
+## Troubleshooting
 
-1. **Desenvolvimento** (repo privado):
-   ```bash
-   # Fazer mudanças no código
-   git add .
-   git commit -m "feat: nova funcionalidade"
-   git tag v1.1.0
-   git push origin v1.1.0
-   ```
+### Erro: "Not Found" ao acessar repositório privado
+- Verifique se o token `PRIVATE_REPO_TOKEN` tem acesso ao repositório privado
+- Confirme se o repositório `luizguil99/terminal-cli` existe e é privado
 
-2. **Release automático** (repo privado):
-   - GitHub Actions cria release com binários
-   - Binários ficam públicos
+### Workflow não executa
+- Verifique se os secrets estão configurados corretamente
+- Confirme se o workflow está habilitado em Actions
 
-3. **Sincronização** (repo público):
-   - Workflow detecta novo release
-   - Atualiza scripts de instalação
-   - Cria release do instalador
-
-4. **Instalação** (usuários):
-   ```bash
-   curl -sSL https://raw.githubusercontent.com/seu-usuario/prismium-installer/main/install.sh | bash
-   ```
-
-## 🎯 Estrutura Final
-
-```
-seu-usuario/
-├── crush/                    # Repositório PRIVADO
-│   ├── .goreleaser.yml      # Configuração de releases
-│   ├── .github/workflows/   # Workflows de build
-│   └── ...                  # Código fonte
-│
-└── prismium-installer/       # Repositório PÚBLICO
-    ├── install.sh           # Script Linux/macOS
-    ├── install.ps1          # Script Windows
-    ├── README.md            # Documentação
-    ├── .github/workflows/   # Workflow de sincronização
-    └── ...                  # Arquivos de instalação
-```
-
-## 🔐 Configuração de Segurança
-
-### Personal Access Token
-
-Criar token com permissões:
-- `repo` (acesso a repositórios)
-- `workflow` (executar workflows)
-- `write:packages` (se usar packages)
-
-### Secrets do Repositório
-
-```bash
-# No repositório prismium-installer
-SOURCE_REPO=seu-usuario/crush
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
-```
-
-## 📊 Monitoramento
-
-### Verificar Status:
-
-1. **Releases do repo principal**: https://github.com/seu-usuario/crush/releases
-2. **Releases do instalador**: https://github.com/seu-usuario/prismium-installer/releases
-3. **Workflows**: https://github.com/seu-usuario/prismium-installer/actions
-
-### Logs de Sincronização:
-
-- Workflow executa a cada 6 horas
-- Verifica novos releases automaticamente
-- Atualiza scripts quando necessário
-
-## 🛠️ Manutenção
-
-### Atualizar Scripts Manualmente:
-
-```bash
-# Editar scripts
-nano install.sh
-nano install.ps1
-
-# Commit e push
-git add .
-git commit -m "fix: corrigir detecção de plataforma"
-git push
-```
-
-### Forçar Sincronização:
-
-```bash
-# No GitHub, ir para Actions
-# Executar workflow "Sync Releases" manualmente
-# Ou aguardar execução automática (6 horas)
-```
-
-## 🎉 Resultado Final
-
-Com essa configuração:
-
-- ✅ **Código privado**: Desenvolvimento seguro
-- ✅ **Instalação pública**: Um comando para instalar
-- ✅ **Atualizações automáticas**: Scripts sempre atualizados
-- ✅ **Distribuição simples**: Como Homebrew
-- ✅ **Manutenção mínima**: Tudo automático
-
-## 📞 Suporte
-
-Se algo não funcionar:
-
-1. Verificar secrets do repositório
-2. Verificar permissões do token
-3. Verificar logs dos workflows
-4. Testar scripts localmente
-
----
-
-**Prismium Installer** - Distribuição profissional! 🚀
+### Release não é criado
+- Verifique se há releases no repositório privado
+- Confirme se o token tem permissão para criar releases no repositório público
